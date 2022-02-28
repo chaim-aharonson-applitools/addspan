@@ -1,5 +1,7 @@
 //https://coryrylan.com/blog/wrapping-dom-text-nodes-with-javascript
-const elt = document.querySelector('#readme > div.Box-body.px-5.pb-5 > article > ul:nth-child(4)');
+//javascript:
+const selector = 'body';
+const elt = document.querySelector(selector);
 let textNodes = [];
 const getNodes = (parent) => {
   const children = Array.from(parent.childNodes);
@@ -18,14 +20,19 @@ textNodes.forEach(node => {
   if(node.data){
     const txts = node.data.split(" ");
     const parent = node.parentNode;
-    parent.removeChild(node);
+    const wrapper = document.createElement("span");
     txts.forEach((txt, idx) => {
-      const span = document.createElement("span");
-      span.innerText = txt;
-      parent.appendChild(span);
-      if(idx<txts.length-1){
-        parent.appendChild(document.createTextNode(" "));
-      };
+      if(txt.trim().length){
+        const span = document.createElement("span");
+        span.innerText = txt.trim();
+        wrapper.appendChild(span);
+        if(idx<txts.length-1){
+          wrapper.appendChild(document.createTextNode(" "));
+        };
+      }else{
+        wrapper.appendChild(document.createTextNode(" "));
+      }
     });
+    parent.replaceChild(wrapper, node);
   };
 })

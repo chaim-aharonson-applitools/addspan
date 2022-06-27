@@ -22,12 +22,24 @@ const getNodes = (parent) =>
   }
 };
 
+
+const range = document.createRange();
+let textAndLocList = [];
 getNodes(elt);
 textNodes.forEach(node => 
 {
   if(node.data)
   {  
-    const splitedText = node.data.split(/(\s+)/); 
+    const splitedText = node.data.split(/(\s+)/);
+    const splitedTextNodes = [];
+    splitedText.forEach(txt =>
+      {
+        if (txt.length > 0)
+        {
+          splitedTextNodes.push(document.createTextNode(txt));
+        }
+      });
+
     const parent = node.parentNode;
     const origNodes = Array.from(parent.childNodes);
     
@@ -36,13 +48,7 @@ textNodes.forEach(node =>
     {
       if (child == node)
       {
-        splitedText.forEach(txt =>
-          {
-            if (txt.length > 0)
-            {
-              updatedNodes.push(document.createTextNode(txt));
-            }
-          });
+        splitedTextNodes.forEach(txtNode =>{updatedNodes.push(txtNode);});
       }
       else
       {
@@ -52,5 +58,15 @@ textNodes.forEach(node =>
     
     origNodes.forEach(child => {parent.removeChild(child);});
     updatedNodes.forEach(child => {parent.appendChild(child);});
+    
+    splitedTextNodes.forEach(child => 
+      {
+        range.selectNode(child);
+        const rect = range.getBoundingClientRect();
+        const textAndLoc = {tetst: child.data, rect: rect};
+        textAndLocList.push(textAndLoc);
+      });
   }
 });
+
+const r = 1;

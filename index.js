@@ -1,7 +1,7 @@
 //https://coryrylan.com/blog/wrapping-dom-text-nodes-with-javascript
 
 const aplt_visible_layer = true;
-const aplt_selector = '.Layout-main';
+const aplt_selector = 'body';
 
 const aplt_func = {
   hasZeroSize: (elt)=>{

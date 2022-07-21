@@ -4,18 +4,18 @@ const aplt_visible_layer = true;
 const aplt_selector = 'body';
 
 const aplt_func = {
-  hasZeroSize: (elt)=>{
-    const eltRect = elt.getBoundingClientRect()
-    return (eltRect.width === 0 && eltRect.height === 0)
+  hasZeroSize: (elt) => {
+    const eltRect = elt.getBoundingClientRect();
+    return (eltRect.width === 0 && eltRect.height === 0);
   },
-  isTooSmall: (elt)=>{
-    const eltRect = elt.getBoundingClientRect()
-    return (eltRect.width <= 1 || eltRect.height <= 1)
+  isTooSmall: (elt) => {
+    const eltRect = elt.getBoundingClientRect();
+    return (eltRect.width <= 1 || eltRect.height <= 1);
   },
   isNotVisible: (elt) => {
-    if (elt.constructor.name !== 'Range'){
-      var eltStyle = window.getComputedStyle(elt, null)
-      if (eltStyle.visibility === 'hidden'){
+    if (elt.constructor.name !== 'Range') {
+      var eltStyle = window.getComputedStyle(elt, null);
+      if (eltStyle.visibility === 'hidden') {
         return 'hidden'
       }
       if (eltStyle.display === 'none') {
@@ -24,14 +24,14 @@ const aplt_func = {
       if (eltStyle.opacity && parseInt(eltStyle.opacity) === 0) {
         return 'transparent'
       }
-      // TODO: once not debugging use the following line instead of the above conditions
-      //return eltStyle.visibility === 'hidden' || eltStyle.display === 'none' || (eltStyle.opacity && parseInt(eltStyle.opacity) === 0)
+      /* TODO: once not debugging use the following line instead of the above conditions
+      //return eltStyle.visibility === 'hidden' || eltStyle.display === 'none' || (eltStyle.opacity && parseInt(eltStyle.opacity) === 0)*/
     }
     return false;
   },
   isIntersecting: (elt, parentElt) => {
-    if (elt && parentElt){
-      const eltRect = elt.getBoundingClientRect()
+    if (elt && parentElt) {
+      const eltRect = elt.getBoundingClientRect();
       const parentEltRect = parentElt.getBoundingClientRect();
       const utils = aplt_func.utils;
       if (!utils.contains(parentEltRect, eltRect)) {
@@ -44,7 +44,7 @@ const aplt_func = {
     return false;
   },
   utils: {
-    // Returns true if `a` contains `b`
+    /* Returns true if `a` contains `b`*/
     contains: (a, b) => (a.x <= b.x && a.y <= b.y && a.right >= b.right && a.bottom >= b.bottom),
     rectTest: (a, b) => (a.height < 0.5 * b.height),
     intersect: (a, b) => {
@@ -81,8 +81,8 @@ const aplt_skip_rules = {
 };
 const aplt_should_skip = (elt, rulesRef, parentElt) => {
   let should_skip = false;
-  aplt_skip_rules[rulesRef].forEach( ruleName => {
-    if (!should_skip){
+  aplt_skip_rules[rulesRef].forEach(ruleName => {
+    if (!should_skip) {
       should_skip = aplt_func[ruleName](elt, parentElt)
       if (should_skip) {
         console.log('>>> skiped with', rulesRef, ruleName, should_skip !== true ? `> ${should_skip}` : '')
@@ -94,7 +94,7 @@ const aplt_should_skip = (elt, rulesRef, parentElt) => {
 
 const aplt_elt = document.querySelector(aplt_selector);
 const aplt_layer = document.createElement('div');
-if (aplt_visible_layer){
+if (aplt_visible_layer) {
   const pageHeight = aplt_func.utils.getPageHeight();
   aplt_layer.style.cssText = `position:absolute;left:0;top:0;right:0;min-height:100%;height:${pageHeight}px;z-index:22222;background-color: rgba(255,255,255,0.5)`;
   document.body.appendChild(aplt_layer);
@@ -126,7 +126,7 @@ aplt_textNodes.forEach(node => {
       }
     });
     const parent = node.parentNode;
-    if(aplt_should_skip(parent, 'parent')){
+    if (aplt_should_skip(parent, 'parent')) {
       return;
     }
     const origNodes = Array.from(parent.childNodes);
@@ -161,5 +161,5 @@ aplt_textNodes.forEach(node => {
     });
   }
   const body_elt = document.querySelector('body');
-  body_elt.setAttribute('data-applitools-info', JSON.stringify(aplt_results))
+  body_elt.setAttribute('data-applitools-info', JSON.stringify(aplt_results));
 })

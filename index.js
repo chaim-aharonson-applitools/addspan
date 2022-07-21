@@ -1,48 +1,122 @@
-
 //https://coryrylan.com/blog/wrapping-dom-text-nodes-with-javascript
-//javascript:
 
-// Returns true if `a` contains `b`
-// (x1, y1) and (x2, y2) are top-left and bottom-right corners
-const contains = (a, b) => (a.x <= b.x && a.y <= b.y && a.right >= b.right && a.bottom >= b.bottom);
-const rectdTest = (a, b) => (a.height < 0.5* b.height);
-const intersect = (a, b) => {
-  var x = Math.max(a.x, b.x);
-  var num1 = Math.min(a.right, b.right);
-  var y = Math.max(a.y, b.y);
-  var num2 = Math.min(a.bottom, b.bottom);
-  if (num1 >= x && num2 >= y)
-    return new DOMRect(x, y, num1 - x, num2 - y);
-  else
-    return new DOMRect(0, 0, 0, 0);
+const aplt_visible_layer = true;
+const aplt_selector = '.Layout-main';
+
+const aplt_func = {
+  hasZeroSize: (elt)=>{
+    const eltRect = elt.getBoundingClientRect()
+    return (eltRect.width === 0 && eltRect.height === 0)
+  },
+  isTooSmall: (elt)=>{
+    const eltRect = elt.getBoundingClientRect()
+    return (eltRect.width <= 1 || eltRect.height <= 1)
+  },
+  isNotVisible: (elt) => {
+    if (elt.constructor.name !== 'Range'){
+      var eltStyle = window.getComputedStyle(elt, null)
+      if (eltStyle.visibility === 'hidden'){
+        return 'hidden'
+      }
+      if (eltStyle.display === 'none') {
+        return 'display_none'
+      }
+      if (eltStyle.opacity && parseInt(eltStyle.opacity) === 0) {
+        return 'transparent'
+      }
+      // TODO: once not debugging use the following line instead of the above conditions
+      //return eltStyle.visibility === 'hidden' || eltStyle.display === 'none' || (eltStyle.opacity && parseInt(eltStyle.opacity) === 0)
+    }
+    return false;
+  },
+  isIntersecting: (elt, parentElt) => {
+    if (elt && parentElt){
+      const eltRect = elt.getBoundingClientRect()
+      const parentEltRect = parentElt.getBoundingClientRect();
+      const utils = aplt_func.utils;
+      if (!utils.contains(parentEltRect, eltRect)) {
+        const intersection = utils.intersect(parentEltRect, eltRect);
+        if (utils.rectTest(intersection, eltRect)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  },
+  utils: {
+    // Returns true if `a` contains `b`
+    contains: (a, b) => (a.x <= b.x && a.y <= b.y && a.right >= b.right && a.bottom >= b.bottom),
+    rectTest: (a, b) => (a.height < 0.5 * b.height),
+    intersect: (a, b) => {
+      var x = Math.max(a.x, b.x);
+      var num1 = Math.min(a.right, b.right);
+      var y = Math.max(a.y, b.y);
+      var num2 = Math.min(a.bottom, b.bottom);
+      if (num1 >= x && num2 >= y) {
+        return new DOMRect(x, y, num1 - x, num2 - y);
+      } else {
+        return new DOMRect(0, 0, 0, 0);
+      }
+    },
+    getPageHeight: () => {
+      const body = document.body;
+      const html = document.documentElement;
+
+      return Math.max(body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight);
+    }
   }
+}
+const aplt_skip_rules = {
+  parent: [
+    'hasZeroSize',
+    'isNotVisible',
+    'isTooSmall',
+  ],
+  child: [
+    'hasZeroSize',
+    'isNotVisible',
+    'isTooSmall',
+    'isIntersecting',
+  ]
+};
+const aplt_should_skip = (elt, rulesRef, parentElt) => {
+  let should_skip = false;
+  aplt_skip_rules[rulesRef].forEach( ruleName => {
+    if (!should_skip){
+      should_skip = aplt_func[ruleName](elt, parentElt)
+      if (should_skip) {
+        console.log('>>> skiped with', rulesRef, ruleName, should_skip !== true ? `> ${should_skip}` : '')
+      }
+    }
+  })
+  return should_skip;
+}
 
-
-const selector = 'body';
-const elt = document.querySelector(selector);
-const layer = document.createElement('div');
-layer.style.cssText = 'position:fixed;left:0;top:0;bottom:0;right:0;z-index:22222;background-color: rgba(255,255,255,0.5)';
-document.body.appendChild(layer);
-let textNodes = [];
-const getNodes = (parent) => {
+const aplt_elt = document.querySelector(aplt_selector);
+const aplt_layer = document.createElement('div');
+if (aplt_visible_layer){
+  const pageHeight = aplt_func.utils.getPageHeight();
+  aplt_layer.style.cssText = `position:absolute;left:0;top:0;right:0;min-height:100%;height:${pageHeight}px;z-index:22222;background-color: rgba(255,255,255,0.5)`;
+  document.body.appendChild(aplt_layer);
+}
+let aplt_textNodes = [];
+const aplt_getNodes = (parent) => {
   const children = Array.from(parent.childNodes);
   if (children && children.length) {
     children.forEach((node) => {
-      if (node.nodeType === 3 && node.textContent.trim().length > 1) {
-        textNodes.push(node);
+      if (node.nodeType === 3 && node.textContent.trim().length > 0) {
+        aplt_textNodes.push(node);
       }
       else {
-        getNodes(node);
+        aplt_getNodes(node);
       }
     });
   }
 };
-
-
-const range = document.createRange();
-let textAndLocList = [];
-getNodes(elt);
-textNodes.forEach(node => {
+const aplt_range = document.createRange();
+const aplt_results = [];
+aplt_getNodes(aplt_elt);
+aplt_textNodes.forEach(node => {
   if (node.data) {
     const splitedText = node.data.split(/(\s+)/);
     const splitedTextNodes = [];
@@ -51,21 +125,12 @@ textNodes.forEach(node => {
         splitedTextNodes.push(document.createTextNode(txt));
       }
     });
-
     const parent = node.parentNode;
-    var parentRect = parent.getBoundingClientRect()
-    if (parentRect.width == 0 && parentRect.height == 0)
-    {
-      return;
-    } 
-    
-    var parentStyle = window.getComputedStyle(parent, null);
-    if (parentStyle.visibility  === "hidden"){
+    if(aplt_should_skip(parent, 'parent')){
       return;
     }
     const origNodes = Array.from(parent.childNodes);
-
-    var updatedNodes = [];
+    const updatedNodes = [];
     origNodes.forEach(child => {
       if (child == node) {
         splitedTextNodes.forEach(txtNode => { updatedNodes.push(txtNode); });
@@ -79,31 +144,22 @@ textNodes.forEach(node => {
     updatedNodes.forEach(child => { parent.appendChild(child); });
 
     splitedTextNodes.forEach(child => {
-      range.selectNode(child);
-      const rect = range.getBoundingClientRect();
-      var rect_layer = document.createElement('div');
-      var schtyle = window.getComputedStyle(child.parentNode, null); // .getPropertyValue('font-size');
-
-      if (!contains(parentRect, rect))
-      {
-        var intersection = intersect(parentRect, rect);
-        if (rectdTest(intersection, rect))
-        {
-          return;
-        }
-      }
-      
-      if (rect.width == 0 && rect.height == 0)
-      {
+      aplt_range.selectNode(child);
+      if (aplt_should_skip(aplt_range, 'child', parent)) {
         return;
       }
-      
-      rect_layer.style.cssText = `position:absolute;left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px;z-index:10;color: green; font: ${schtyle.getPropertyValue('font')};`; //
-      rect_layer.style.lineHeight = '';
-      rect_layer.innerHTML = child.data;
-      layer.appendChild(rect_layer);
-      const textAndLoc = { text: child.data, rect };
-      textAndLocList.push(textAndLoc);
+      const rect = aplt_range.getBoundingClientRect();
+      if (aplt_visible_layer) {
+        const rect_layer = document.createElement('div');
+        const parent_style = window.getComputedStyle(child.parentNode, null);
+        rect_layer.style.cssText = `position:absolute;left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px;z-index:10;color: green; font: ${parent_style.getPropertyValue('font')};`; //
+        rect_layer.style.lineHeight = '';
+        rect_layer.innerHTML = child.data;
+        aplt_layer.appendChild(rect_layer);
+      }
+      aplt_results.push({ text: child.data, rect });
     });
   }
+  const body_elt = document.querySelector('body');
+  body_elt.setAttribute('data-applitools-info', JSON.stringify(aplt_results))
 })

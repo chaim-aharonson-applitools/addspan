@@ -1,6 +1,7 @@
 //https://coryrylan.com/blog/wrapping-dom-text-nodes-with-javascript
 
 const aplt_visible_layer = true;
+const aplt_wait = 1800;
 const aplt_selector = 'body';
 
 const aplt_func = {
@@ -91,75 +92,77 @@ const aplt_should_skip = (elt, rulesRef, parentElt) => {
   })
   return should_skip;
 }
-
-const aplt_elt = document.querySelector(aplt_selector);
-const aplt_layer = document.createElement('div');
-if (aplt_visible_layer) {
-  const pageHeight = aplt_func.utils.getPageHeight();
-  aplt_layer.style.cssText = `position:absolute;left:0;top:0;right:0;min-height:100%;height:${pageHeight}px;z-index:22222;background-color: rgba(255,255,255,0.5)`;
-  document.body.appendChild(aplt_layer);
-}
-let aplt_textNodes = [];
-const aplt_getNodes = (parent) => {
-  const children = Array.from(parent.childNodes);
-  if (children && children.length) {
-    children.forEach((node) => {
-      if (node.nodeType === 3 && node.textContent.trim().length > 0) {
-        aplt_textNodes.push(node);
-      }
-      else {
-        aplt_getNodes(node);
-      }
-    });
+const aplt_run = () => {
+  const aplt_elt = document.querySelector(aplt_selector);
+  const aplt_layer = document.createElement('div');
+  if (aplt_visible_layer) {
+    const pageHeight = aplt_func.utils.getPageHeight();
+    aplt_layer.style.cssText = `position:absolute;left:0;top:0;right:0;min-height:100%;height:${pageHeight}px;z-index:22222;background-color: rgba(255,255,255,0.5)`;
+    document.body.appendChild(aplt_layer);
   }
-};
-const aplt_range = document.createRange();
-const aplt_results = [];
-aplt_getNodes(aplt_elt);
-aplt_textNodes.forEach(node => {
-  if (node.data) {
-    const splitedText = node.data.split(/(\s+)/);
-    const splitedTextNodes = [];
-    splitedText.forEach(txt => {
-      if (txt.length > 0) {
-        splitedTextNodes.push(document.createTextNode(txt));
-      }
-    });
-    const parent = node.parentNode;
-    if (aplt_should_skip(parent, 'parent')) {
-      return;
+  let aplt_textNodes = [];
+  const aplt_getNodes = (parent) => {
+    const children = Array.from(parent.childNodes);
+    if (children && children.length) {
+      children.forEach((node) => {
+        if (node.nodeType === 3 && node.textContent.trim().length > 0) {
+          aplt_textNodes.push(node);
+        }
+        else {
+          aplt_getNodes(node);
+        }
+      });
     }
-    const origNodes = Array.from(parent.childNodes);
-    const updatedNodes = [];
-    origNodes.forEach(child => {
-      if (child == node) {
-        splitedTextNodes.forEach(txtNode => { updatedNodes.push(txtNode); });
-      }
-      else {
-        updatedNodes.push(child);
-      }
-    });
-
-    origNodes.forEach(child => { parent.removeChild(child); });
-    updatedNodes.forEach(child => { parent.appendChild(child); });
-
-    splitedTextNodes.forEach(child => {
-      aplt_range.selectNode(child);
-      if (aplt_should_skip(aplt_range, 'child', parent)) {
+  };
+  const aplt_range = document.createRange();
+  const aplt_results = [];
+  aplt_getNodes(aplt_elt);
+  aplt_textNodes.forEach(node => {
+    if (node.data) {
+      const splitedText = node.data.split(/(\s+)/);
+      const splitedTextNodes = [];
+      splitedText.forEach(txt => {
+        if (txt.length > 0) {
+          splitedTextNodes.push(document.createTextNode(txt));
+        }
+      });
+      const parent = node.parentNode;
+      if (aplt_should_skip(parent, 'parent')) {
         return;
       }
-      const rect = aplt_range.getBoundingClientRect();
-      if (aplt_visible_layer) {
-        const rect_layer = document.createElement('div');
-        const parent_style = window.getComputedStyle(child.parentNode, null);
-        rect_layer.style.cssText = `position:absolute;left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px;z-index:10;color: green; font: ${parent_style.getPropertyValue('font')};`; //
-        rect_layer.style.lineHeight = '';
-        rect_layer.innerHTML = child.data;
-        aplt_layer.appendChild(rect_layer);
-      }
-      aplt_results.push({ text: child.data, rect });
-    });
-  }
-  const body_elt = document.querySelector('body');
-  body_elt.setAttribute('data-applitools-info', JSON.stringify(aplt_results));
-})
+      const origNodes = Array.from(parent.childNodes);
+      const updatedNodes = [];
+      origNodes.forEach(child => {
+        if (child == node) {
+          splitedTextNodes.forEach(txtNode => { updatedNodes.push(txtNode); });
+        }
+        else {
+          updatedNodes.push(child);
+        }
+      });
+
+      origNodes.forEach(child => { parent.removeChild(child); });
+      updatedNodes.forEach(child => { parent.appendChild(child); });
+
+      splitedTextNodes.forEach(child => {
+        aplt_range.selectNode(child);
+        if (aplt_should_skip(aplt_range, 'child', parent)) {
+          return;
+        }
+        const rect = aplt_range.getBoundingClientRect();
+        if (aplt_visible_layer) {
+          const rect_layer = document.createElement('div');
+          const parent_style = window.getComputedStyle(child.parentNode, null);
+          rect_layer.style.cssText = `position:absolute;left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px;z-index:10;color: green; font: ${parent_style.getPropertyValue('font')};`; //
+          rect_layer.style.lineHeight = '';
+          rect_layer.innerHTML = child.data;
+          aplt_layer.appendChild(rect_layer);
+        }
+        aplt_results.push({ text: child.data, rect });
+      });
+    }
+    const body_elt = document.querySelector('body');
+    body_elt.setAttribute('data-applitools-info', JSON.stringify(aplt_results));
+  })
+}
+setTimeout(aplt_run, aplt_wait)

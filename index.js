@@ -123,7 +123,7 @@ const aplt_run = () => {
   aplt_getNodes(aplt_elt);
   aplt_textNodes.forEach(node => {
     if (node.data) {
-      const splitedText = node.data.split(/(\s|\/|\-)/gm);
+      const splitedText = node.data.split(/[\s\/-]/g);
     
       const splitedTextNodes = [];
       splitedText.forEach(txt => {

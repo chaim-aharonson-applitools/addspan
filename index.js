@@ -1,7 +1,7 @@
 //https://coryrylan.com/blog/wrapping-dom-text-nodes-with-javascript
 
 const aplt_visible_layer = true;
-const aplt_wait = 1800;
+const aplt_wait = 10;
 const aplt_selector = 'body';
 
 const aplt_func = {
@@ -26,7 +26,7 @@ const aplt_func = {
         return 'transparent'
       }
       /* TODO: once not debugging use the following line instead of the above conditions
-      //return eltStyle.visibility === 'hidden' || eltStyle.display === 'none' || (eltStyle.opacity && parseInt(eltStyle.opacity) === 0)*/
+      return eltStyle.visibility === 'hidden' || eltStyle.display === 'none' || (eltStyle.opacity && parseInt(eltStyle.opacity) === 0)*/
     }
     return false;
   },
@@ -38,15 +38,15 @@ const aplt_func = {
       if (!utils.contains(parentEltRect, eltRect)) {
         const intersection = utils.intersect(parentEltRect, eltRect);
         if (utils.rectTest(intersection, eltRect)) {
-          return true;
+          return 'intersect';
         }
       }
     }
     return false;
   },
   utils: {
-    /* Returns true if `a` contains `b`*/
-    contains: (a, b) => (a.x <= b.x && a.y <= b.y && a.right >= b.right && a.bottom >= b.bottom),
+    contains: (a, b) => (a.x <= b.x && a.y <= b.y && b.y < a.y + a.height && b.x < a.x + a.width),
+    contains_old: (a, b) => (a.x <= b.x && a.y <= b.y && a.right >= b.right && a.bottom >= b.bottom),
     rectTest: (a, b) => (a.height < 0.5 * b.height),
     intersect: (a, b) => {
       var x = Math.max(a.x, b.x);
@@ -80,13 +80,14 @@ const aplt_skip_rules = {
     'isIntersecting',
   ]
 };
-const aplt_should_skip = (elt, rulesRef, parentElt) => {
+const aplt_should_skip = (elt, parentElt) => {
   let should_skip = false;
+  const rulesRef = !!parentElt ? 'child' : 'parent';
   aplt_skip_rules[rulesRef].forEach(ruleName => {
     if (!should_skip) {
       should_skip = aplt_func[ruleName](elt, parentElt)
       if (should_skip) {
-        console.log('>>> skiped with', rulesRef, ruleName, should_skip !== true ? `> ${should_skip}` : '')
+        console.log('>>> skiped with', rulesRef, ruleName, should_skip !== true ? '> ' + should_skip : '')
       }
     }
   })
@@ -97,7 +98,7 @@ const aplt_run = () => {
   const aplt_layer = document.createElement('div');
   if (aplt_visible_layer) {
     const pageHeight = aplt_func.utils.getPageHeight();
-    aplt_layer.style.cssText = `position:absolute;left:0;top:0;right:0;min-height:100%;height:${pageHeight}px;z-index:22222;background-color: rgba(255,255,255,0.5)`;
+    aplt_layer.style.cssText = 'position:absolute;left:0;top:0;right:0;min-height:100%;height:'+pageHeight+'px;z-index:22222;background-color: rgba(255,255,255,0.3)';
     document.body.appendChild(aplt_layer);
   }
   let aplt_textNodes = [];
@@ -105,6 +106,9 @@ const aplt_run = () => {
     const children = Array.from(parent.childNodes);
     if (children && children.length) {
       children.forEach((node) => {
+        if (typeof node.getBoundingClientRect === 'function' && aplt_should_skip(node, parent)) {
+          return;
+        }
         if (node.nodeType === 3 && node.textContent.trim().length > 0) {
           aplt_textNodes.push(node);
         }
@@ -119,7 +123,8 @@ const aplt_run = () => {
   aplt_getNodes(aplt_elt);
   aplt_textNodes.forEach(node => {
     if (node.data) {
-      const splitedText = node.data.split(/(\s+)/);
+      const splitedText = node.data.split(/(\s|\/|\-)/gm);
+    
       const splitedTextNodes = [];
       splitedText.forEach(txt => {
         if (txt.length > 0) {
@@ -127,7 +132,7 @@ const aplt_run = () => {
         }
       });
       const parent = node.parentNode;
-      if (aplt_should_skip(parent, 'parent')) {
+      if (aplt_should_skip(parent)) {
         return;
       }
       const origNodes = Array.from(parent.childNodes);
@@ -146,19 +151,20 @@ const aplt_run = () => {
 
       splitedTextNodes.forEach(child => {
         aplt_range.selectNode(child);
-        if (aplt_should_skip(aplt_range, 'child', parent)) {
+        if (aplt_should_skip(aplt_range, parent)) {
           return;
         }
         const rect = aplt_range.getBoundingClientRect();
-        if (aplt_visible_layer) {
-          const rect_layer = document.createElement('div');
-          const parent_style = window.getComputedStyle(child.parentNode, null);
-          rect_layer.style.cssText = `position:absolute;left:${rect.x}px;top:${rect.y}px;width:${rect.width}px;height:${rect.height}px;z-index:10;color: green; font: ${parent_style.getPropertyValue('font')};`; //
-          rect_layer.style.lineHeight = '';
-          rect_layer.innerHTML = child.data;
-          aplt_layer.appendChild(rect_layer);
+        if (child.data.trim().length > 0) {
+          if (aplt_visible_layer) {
+            const rect_layer = document.createElement('div');
+            const parent_style = window.getComputedStyle(child.parentNode, null);
+            rect_layer.style.cssText = 'position:absolute;left:'+rect.x+'px;top:'+rect.y+'px;width:'+rect.width+'px;height:'+rect.height+'px;z-index:10;outline:1px solid yellow;color: lightgreen;font: '+parent_style.getPropertyValue('font')+';';
+            rect_layer.innerHTML = child.data;
+            aplt_layer.appendChild(rect_layer);
+          }
+          aplt_results.push({ text: child.data, rect });
         }
-        aplt_results.push({ text: child.data, rect });
       });
     }
     const body_elt = document.querySelector('body');

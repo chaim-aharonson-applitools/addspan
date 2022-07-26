@@ -167,7 +167,7 @@ const aplt_run = () => {
             const rect_layer = document.createElement('div');
             const parent_style = window.getComputedStyle(child.parentNode, null);
             rect_layer.style.cssText = 'position:absolute;left:'+rect.x+'px;top:'+rect.y+'px;width:'+rect.width+'px;height:'+rect.height+'px;z-index:10;outline:1px solid yellow;color: lightgreen;font: '+parent_style.getPropertyValue('font')+';';
-            rect_layer.innerHTML = child.data;
+            rect_layer.innerText = child.data;
             aplt_layer.appendChild(rect_layer);
           }
           aplt_results.push({ text: child.data, rect });

@@ -98,7 +98,7 @@ const aplt_run = () => {
   const aplt_layer = document.createElement('div');
   if (aplt_visible_layer) {
     const pageHeight = aplt_func.utils.getPageHeight();
-    aplt_layer.style.cssText = 'position:absolute;left:0;top:0;right:0;min-height:100%;height:'+pageHeight+'px;z-index:22222;background-color: rgba(255,255,255,0.3)';
+    aplt_layer.style.cssText = 'position:fixed;left:0;top:0;right:0;min-height:100%;height:'+pageHeight+'px;z-index:22222;background-color: rgba(255,255,255,0.3)';
     document.body.appendChild(aplt_layer);
   }
   let aplt_textNodes = [];

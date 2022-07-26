@@ -106,9 +106,16 @@ const aplt_run = () => {
     const children = Array.from(parent.childNodes);
     if (children && children.length) {
       children.forEach((node) => {
-        if (typeof node.getBoundingClientRect === 'function' && aplt_should_skip(node, parent)) {
-          return;
+        if (parent.tagName && parent.tagName.includes("DETAILS")
+           && node.tagName && (!node.tagName.includes("SUMMARY")))
+        {
+          var r = 1;
+          if (!parent.hasAttribute("open"))
+          {
+            return;
+          }
         }
+          
         if (node.nodeType === 3 && node.textContent.trim().length > 0) {
           aplt_textNodes.push(node);
         }

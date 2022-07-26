@@ -1,9 +1,7 @@
-//https://coryrylan.com/blog/wrapping-dom-text-nodes-with-javascript
-
 const aplt_visible_layer = true;
-const aplt_wait = 10;
+const aplt_wait = 4000;
 const aplt_selector = 'body';
-
+const hide_overlay_text = true;
 const aplt_func = {
   hasZeroSize: (elt) => {
     const eltRect = elt.getBoundingClientRect();
@@ -17,16 +15,14 @@ const aplt_func = {
     if (elt.constructor.name !== 'Range') {
       var eltStyle = window.getComputedStyle(elt, null);
       if (eltStyle.visibility === 'hidden') {
-        return 'hidden'
+        return 'hidden';
       }
       if (eltStyle.display === 'none') {
-        return 'display_none'
+        return 'display_none';
       }
       if (eltStyle.opacity && parseInt(eltStyle.opacity) === 0) {
-        return 'transparent'
+        return 'transparent';
       }
-      /* TODO: once not debugging use the following line instead of the above conditions
-      return eltStyle.visibility === 'hidden' || eltStyle.display === 'none' || (eltStyle.opacity && parseInt(eltStyle.opacity) === 0)*/
     }
     return false;
   },
@@ -66,7 +62,7 @@ const aplt_func = {
       return Math.max(body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight);
     }
   }
-}
+};
 const aplt_skip_rules = {
   parent: [
     'hasZeroSize',
@@ -85,20 +81,25 @@ const aplt_should_skip = (elt, parentElt) => {
   const rulesRef = !!parentElt ? 'child' : 'parent';
   aplt_skip_rules[rulesRef].forEach(ruleName => {
     if (!should_skip) {
-      should_skip = aplt_func[ruleName](elt, parentElt)
+      should_skip = aplt_func[ruleName](elt, parentElt);
       if (should_skip) {
-        console.log('>>> skiped with', rulesRef, ruleName, should_skip !== true ? '> ' + should_skip : '')
+        console.log('>>> skiped with', rulesRef, ruleName, should_skip !== true ? '> ' + should_skip : '');
       }
     }
-  })
+  });
   return should_skip;
-}
+};
 const aplt_run = () => {
   const aplt_elt = document.querySelector(aplt_selector);
   const aplt_layer = document.createElement('div');
   if (aplt_visible_layer) {
     const pageHeight = aplt_func.utils.getPageHeight();
-    aplt_layer.style.cssText = 'position:absolute;left:0;top:0;right:0;min-height:100%;height:'+pageHeight+'px;z-index:22222;background-color: rgba(255,255,255,0.3)';
+    aplt_layer.id = 'data-applitools-gt';
+    var aplt_layer_style = 'position:absolute;left:0;top:0;right:0;min-height:100%;height:'+pageHeight+'px;z-index:22222;background-color: rgba(255,255,255,0.3)';
+    if(hide_overlay_text){
+      aplt_layer_style = 'opacity:0;' + aplt_layer_style;
+    }
+    aplt_layer.style.cssText = aplt_layer_style;
     document.body.appendChild(aplt_layer);
   }
   let aplt_textNodes = [];
@@ -123,8 +124,8 @@ const aplt_run = () => {
   aplt_getNodes(aplt_elt);
   aplt_textNodes.forEach(node => {
     if (node.data) {
-      const splitedText = node.data.split(/[\s\/-]/g);
-    
+      const regex = /(\s|\/|\-)+/;
+      const splitedText = node.data.split(regex);
       const splitedTextNodes = [];
       splitedText.forEach(txt => {
         if (txt.length > 0) {
@@ -159,7 +160,16 @@ const aplt_run = () => {
           if (aplt_visible_layer) {
             const rect_layer = document.createElement('div');
             const parent_style = window.getComputedStyle(child.parentNode, null);
-            rect_layer.style.cssText = 'position:absolute;left:'+rect.x+'px;top:'+rect.y+'px;width:'+rect.width+'px;height:'+rect.height+'px;z-index:10;outline:1px solid yellow;color: lightgreen;font: '+parent_style.getPropertyValue('font')+';';
+            let yPos = rect.y;
+            if (rect.y < parseFloat(parent_style.top)) {
+              yPos = parseFloat(parent_style.top);
+            }
+            var common_style = 'position:absolute;left:' + rect.x + 'px;top:'+yPos+'px;width:'+rect.width+'px;height:'+rect.height+'px;z-index:10;';
+            if(hide_overlay_text){
+              rect_layer.style.cssText = common_style + 'color: green; font: '+parent_style.getPropertyValue('font')+'; text-decoration-line: '+parent_style.getPropertyValue('text-decoration-line')+';background-color: '+parent_style.getPropertyValue('background-color')+'; color: '+parent_style.color+';';
+            }else {
+              rect_layer.style.cssText = common_style + 'outline:1px solid yellow;color: lightgreen;font: ' + parent_style.getPropertyValue('font') + ';';
+            }
             rect_layer.innerHTML = child.data;
             aplt_layer.appendChild(rect_layer);
           }
@@ -170,5 +180,5 @@ const aplt_run = () => {
     const body_elt = document.querySelector('body');
     body_elt.setAttribute('data-applitools-info', JSON.stringify(aplt_results));
   })
-}
-setTimeout(aplt_run, aplt_wait)
+};
+setTimeout(aplt_run, aplt_wait);

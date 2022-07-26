@@ -30,23 +30,20 @@ const aplt_func = {
     }
     return false;
   },
-  isIntersecting: (elt, parentElt) => {
+  isNotIntersecting: (elt, parentElt) => {
     if (elt && parentElt) {
       const eltRect = elt.getBoundingClientRect();
       const parentEltRect = parentElt.getBoundingClientRect();
       const utils = aplt_func.utils;
-      if (!utils.contains(parentEltRect, eltRect)) {
-        const intersection = utils.intersect(parentEltRect, eltRect);
+      const intersection = utils.intersect(parentEltRect, eltRect);
         if (utils.rectTest(intersection, eltRect)) {
-          return 'intersect';
+          return 'notIntersect';
         }
-      }
     }
     return false;
   },
   utils: {
-    contains: (a, b) => (a.x <= b.x && a.y <= b.y && b.y < a.y + a.height && b.x < a.x + a.width),
-    contains_old: (a, b) => (a.x <= b.x && a.y <= b.y && a.right >= b.right && a.bottom >= b.bottom),
+    contains: (a, b) => (a.x <= b.x && a.y <= b.y && a.right >= b.right && a.bottom >= b.bottom),
     rectTest: (a, b) => (a.height < 0.5 * b.height),
     intersect: (a, b) => {
       var x = Math.max(a.x, b.x);
@@ -77,7 +74,7 @@ const aplt_skip_rules = {
     'hasZeroSize',
     'isNotVisible',
     'isTooSmall',
-    'isIntersecting',
+    'isNotIntersecting',
   ]
 };
 const aplt_should_skip = (elt, parentElt) => {
